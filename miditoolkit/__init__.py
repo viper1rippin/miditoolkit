@@ -19,6 +19,7 @@ from miditoolkit.midi.containers import (
     TimeSignature,
 )
 from miditoolkit.midi.parser import MidiFile
+from miditoolkit.json_generator import MidiJsonGenerator, midi_to_json
 
 __all__ = [
     "ControlChange",
@@ -27,9 +28,11 @@ __all__ = [
     "Lyric",
     "Marker",
     "MidiFile",
+    "MidiJsonGenerator",
     "Note",
     "Pedal",
     "PitchBend",
     "TempoChange",
     "TimeSignature",
+    "midi_to_json",
 ]

@@ -164,54 +164,116 @@ print(f"Ticks per beat: {midi.ticks_per_beat}")
 
 ## Output Format
 
-The generated JSON follows this structure:
+The generated JSON follows this structure (example from "Mr. Blue Sky"):
 
 ```json
 {
-  "song_id": "0011",
-  "title": "Cruel Angel's Thesis",
-  "genre": "Anime / J-Pop",
-  "tempo_bpm": 130,
-  "key": "C Major",
+  "song_id": "0001",
+  "title": "Mr. Blue Sky",
+  "genre": "Rock",
+  "tempo_bpm": 175,
+  "key": "F Major",
   "time_signature": "4/4",
   "tracks": [
     {
       "lane": 0,
-      "program_number": 0,
-      "program_name": "Acoustic Grand Piano",
+      "program_number": 73,
+      "program_name": "Flute",
       "role": "Melody"
     },
     {
       "lane": 1,
-      "program_number": 48,
-      "program_name": "Strings Ensemble",
-      "role": "Harmony"
+      "program_number": 0,
+      "program_name": "Acoustic Grand Piano",
+      "role": "Piano"
     },
     {
       "lane": 2,
-      "program_number": 24,
-      "program_name": "Nylon Guitar",
-      "role": "Accompaniment"
+      "program_number": 33,
+      "program_name": "Electric Bass (finger)",
+      "role": "Bass"
+    },
+    {
+      "lane": 3,
+      "program_number": 33,
+      "program_name": "Electric Bass (finger)",
+      "role": "Drums"
+    },
+    {
+      "lane": 4,
+      "program_number": 48,
+      "program_name": "Strings Ensemble",
+      "role": "Strings"
+    },
+    {
+      "lane": 5,
+      "program_number": 82,
+      "program_name": "Lead 3 (calliope)",
+      "role": "Caliope"
+    },
+    {
+      "lane": 6,
+      "program_number": 52,
+      "program_name": "Choir Aahs",
+      "role": "Choir"
+    },
+    {
+      "lane": 7,
+      "program_number": 90,
+      "program_name": "Pad 3 (polysynth)",
+      "role": "Blue Sky Synth"
+    },
+    {
+      "lane": 8,
+      "program_number": 29,
+      "program_name": "Overdriven Guitar",
+      "role": "Lead Guitar"
     }
   ],
   "latent_tags": {
-    "arrangement_complexity": "medium",
-    "layer_count": 3,
-    "polyphony": 0.72
+    "arrangement_complexity": "high",
+    "layer_count": 9,
+    "polyphony": 0.34
   },
-  "source": "MuseScore"
+  "source": "Test Dataset"
 }
 ```
 
-## Track Role Detection
+**Note:** This example shows all 9 tracks from the original MIDI file. The `role` field contains the original track names from the MIDI file (e.g., "Melody", "Piano", "Bass"), while `program_name` shows the General MIDI instrument names (e.g., "Flute", "Acoustic Grand Piano").
 
-The generator automatically detects track roles based on several heuristics:
+## Track Roles
+
+### Default Behavior: Extract Original Names
+
+By default, the generator **extracts the original track names** from the MIDI file and uses them as the `role` field. This preserves the metadata that was originally assigned when the MIDI file was created.
+
+For example:
+- If a track is named "Melody" in the MIDI file → `"role": "Melody"`
+- If a track is named "Bass" in the MIDI file → `"role": "Bass"`
+- If a track is named "Lead Guitar" in the MIDI file → `"role": "Lead Guitar"`
+
+### Optional: Heuristic Role Detection
+
+If you want to **automatically detect** roles using intelligent heuristics instead of using the original names, you can enable the `use_detected_roles` parameter or use the `--detect-roles` CLI flag.
+
+When enabled, the generator detects roles based on:
 
 - **Rhythm**: Drum tracks (MIDI channel 10)
 - **Bass**: Bass instruments (programs 32-39) or tracks with average pitch < 50
 - **Melody**: High pitch range (avg > 60), wide pitch span (> 12 semitones), moderate note density
 - **Harmony**: High polyphony (multiple simultaneous notes, indicating chords)
 - **Accompaniment**: Everything else (supporting instruments)
+
+**Example:**
+```python
+# Use heuristic detection
+generator.generate_json(use_detected_roles=True)
+```
+
+```bash
+# Use heuristic detection (CLI)
+python midi_to_json.py song.mid --detect-roles
+```
 
 ## Latent Tags
 

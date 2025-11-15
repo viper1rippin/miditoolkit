@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI to JSON Converter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🎵 MIDI to JSON Converter</h1>
+            <p>Convert MIDI files to structured JSON metadata with AWS S3 integration</p>
+        </header>
+
+        <!-- S3 Configuration Section -->
+        <section class="card s3-config" id="s3ConfigSection">
+            <h2>AWS S3 Configuration</h2>
+            <div class="s3-status" id="s3Status">
+                <span class="status-badge" id="s3StatusBadge">Not Configured</span>
+                <button class="btn btn-secondary" id="toggleS3Config">Configure S3</button>
+            </div>
+
+            <form id="s3ConfigForm" class="config-form hidden">
+                <div class="form-group">
+                    <label for="awsAccessKeyId">AWS Access Key ID</label>
+                    <input type="text" id="awsAccessKeyId" placeholder="AKIA..." required>
+                </div>
+
+                <div class="form-group">
+                    <label for="awsSecretAccessKey">AWS Secret Access Key</label>
+                    <input type="password" id="awsSecretAccessKey" placeholder="******************" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="awsRegion">AWS Region</label>
+                    <select id="awsRegion">
+                        <option value="us-east-1">US East (N. Virginia)</option>
+                        <option value="us-west-1">US West (N. California)</option>
+                        <option value="us-west-2">US West (Oregon)</option>
+                        <option value="eu-west-1">EU (Ireland)</option>
+                        <option value="eu-central-1">EU (Frankfurt)</option>
+                        <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                        <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="s3BucketName">S3 Bucket Name</label>
+                    <input type="text" id="s3BucketName" placeholder="my-midi-bucket" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save S3 Configuration</button>
+            </form>
+        </section>
+
+        <!-- Statistics Dashboard -->
+        <section class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">Total Jobs</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value" id="statCompleted">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-value" id="statPending">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card error">
+                <div class="stat-value" id="statFailed">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-value" id="statS3">0</div>
+                <div class="stat-label">Uploaded to S3</div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section class="card upload-section">
+            <h2>Upload MIDI File</h2>
+            <form id="uploadForm">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="midiFile" accept=".mid,.midi" required>
+                    <div class="upload-content">
+                        <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p>Click or drag MIDI file to upload</p>
+                        <p class="upload-hint">Supported formats: .mid, .midi (Max 50MB)</p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="songId">Song ID (Optional)</label>
+                        <input type="text" id="songId" placeholder="e.g., 0011">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="songTitle">Title (Optional)</label>
+                        <input type="text" id="songTitle" placeholder="e.g., My Song">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="songGenre">Genre</label>
+                        <input type="text" id="songGenre" placeholder="e.g., Pop" value="Unknown">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="songSource">Source</label>
+                        <input type="text" id="songSource" placeholder="e.g., MuseScore" value="Upload">
+                    </div>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="autoUploadS3">
+                        Automatically upload to S3 after conversion
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-large">
+                    <span id="uploadBtnText">Upload and Convert</span>
+                    <span id="uploadSpinner" class="spinner hidden"></span>
+                </button>
+            </form>
+        </section>
+
+        <!-- Jobs List -->
+        <section class="card jobs-section">
+            <div class="section-header">
+                <h2>Conversion Jobs</h2>
+                <div class="filter-controls">
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <button class="btn btn-secondary" id="refreshJobs">Refresh</button>
+                </div>
+            </div>
+
+            <div id="jobsContainer">
+                <p class="empty-state">No jobs yet. Upload a MIDI file to get started!</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -95,6 +95,12 @@ Examples:
         help='Output compact JSON (no indentation)'
     )
 
+    parser.add_argument(
+        '--detect-roles',
+        action='store_true',
+        help='Use heuristic role detection instead of original MIDI track names'
+    )
+
     args = parser.parse_args()
 
     # Check if input file exists
@@ -126,7 +132,8 @@ Examples:
             title=args.title,
             genre=args.genre,
             source=args.source,
-            indent=indent
+            indent=indent,
+            use_detected_roles=args.detect_roles
         )
 
         # Output

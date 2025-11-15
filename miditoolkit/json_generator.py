@@ -248,8 +248,12 @@ class MidiJsonGenerator:
         else:
             return "high"
 
-    def get_tracks_metadata(self) -> List[Dict[str, Any]]:
+    def get_tracks_metadata(self, use_detected_roles: bool = False) -> List[Dict[str, Any]]:
         """Get metadata for all tracks.
+
+        Args:
+            use_detected_roles: If True, use heuristic role detection instead of
+                              original MIDI track names. Default: False (use original names)
 
         Returns:
             List of track metadata dictionaries
@@ -257,14 +261,18 @@ class MidiJsonGenerator:
         tracks = []
 
         for lane, instrument in enumerate(self.midi.instruments):
-            # Get program name
+            # Get program name from General MIDI mapping
             program_name = PROGRAM_NUMBER_TO_INSTRUMENT_NAME.get(
                 instrument.program,
                 "Percussion" if instrument.is_drum else f"Program {instrument.program}"
             )
 
-            # Detect role
-            role = self.detect_track_role(instrument, self.midi.instruments)
+            # Get role from original MIDI track name, or detect if requested
+            if use_detected_roles:
+                role = self.detect_track_role(instrument, self.midi.instruments)
+            else:
+                # Use the original MIDI track name as the role
+                role = instrument.name if instrument.name else "Untitled"
 
             track_info = {
                 "lane": lane,
@@ -296,7 +304,8 @@ class MidiJsonGenerator:
         song_id: Optional[str] = None,
         title: Optional[str] = None,
         genre: Optional[str] = None,
-        source: str = "MIDI"
+        source: str = "MIDI",
+        use_detected_roles: bool = False
     ) -> Dict[str, Any]:
         """Generate complete JSON metadata.
 
@@ -305,6 +314,8 @@ class MidiJsonGenerator:
             title: Optional song title
             genre: Optional genre classification
             source: Source of the MIDI file (default: "MIDI")
+            use_detected_roles: If True, detect roles using heuristics instead of
+                              using original MIDI track names (default: False)
 
         Returns:
             Dictionary containing all metadata
@@ -316,7 +327,7 @@ class MidiJsonGenerator:
             "tempo_bpm": self.get_tempo_bpm(),
             "key": self.get_key_signature(),
             "time_signature": self.get_time_signature(),
-            "tracks": self.get_tracks_metadata(),
+            "tracks": self.get_tracks_metadata(use_detected_roles),
             "latent_tags": self.get_latent_tags(),
             "source": source
         }
@@ -329,7 +340,8 @@ class MidiJsonGenerator:
         title: Optional[str] = None,
         genre: Optional[str] = None,
         source: str = "MIDI",
-        indent: int = 2
+        indent: int = 2,
+        use_detected_roles: bool = False
     ) -> str:
         """Generate JSON metadata as a formatted string.
 
@@ -339,11 +351,13 @@ class MidiJsonGenerator:
             genre: Optional genre classification
             source: Source of the MIDI file
             indent: JSON indentation level (default: 2)
+            use_detected_roles: If True, detect roles using heuristics instead of
+                              using original MIDI track names (default: False)
 
         Returns:
             Formatted JSON string
         """
-        metadata = self.generate_json(song_id, title, genre, source)
+        metadata = self.generate_json(song_id, title, genre, source, use_detected_roles)
         # Convert numpy types to native Python types for JSON serialization
         metadata = convert_numpy_types(metadata)
         return json.dumps(metadata, indent=indent, ensure_ascii=False)
@@ -355,7 +369,8 @@ class MidiJsonGenerator:
         title: Optional[str] = None,
         genre: Optional[str] = None,
         source: str = "MIDI",
-        indent: int = 2
+        indent: int = 2,
+        use_detected_roles: bool = False
     ) -> None:
         """Save JSON metadata to a file.
 
@@ -366,8 +381,10 @@ class MidiJsonGenerator:
             genre: Optional genre classification
             source: Source of the MIDI file
             indent: JSON indentation level (default: 2)
+            use_detected_roles: If True, detect roles using heuristics instead of
+                              using original MIDI track names (default: False)
         """
-        json_string = self.to_json_string(song_id, title, genre, source, indent)
+        json_string = self.to_json_string(song_id, title, genre, source, indent, use_detected_roles)
 
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(json_string)
@@ -378,7 +395,8 @@ def midi_to_json(
     song_id: Optional[str] = None,
     title: Optional[str] = None,
     genre: Optional[str] = None,
-    source: str = "MIDI"
+    source: str = "MIDI",
+    use_detected_roles: bool = False
 ) -> Dict[str, Any]:
     """Convenience function to generate JSON from a MIDI file path.
 
@@ -388,9 +406,11 @@ def midi_to_json(
         title: Optional song title
         genre: Optional genre classification
         source: Source of the MIDI file
+        use_detected_roles: If True, detect roles using heuristics instead of
+                          using original MIDI track names (default: False)
 
     Returns:
         Dictionary containing all metadata
     """
     generator = MidiJsonGenerator.from_file(midi_path)
-    return generator.generate_json(song_id, title, genre, source)
+    return generator.generate_json(song_id, title, genre, source, use_detected_roles)
